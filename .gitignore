@@ -47,3 +47,9 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# Notebook outputs
+*.nb.html
+
+# Annoying macOS files
+.DS_Store
