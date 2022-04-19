@@ -1,0 +1,64 @@
+---
+title: "Example code"
+output: 
+  html_notebook: 
+    toc: yes
+---
+
+```{r setup, echo=FALSE}
+library(tidyverse)
+library(REDCapR)
+```
+
+--------------------------------------------------------------------------------
+
+## Downloading data from REDCap using `REDCapR`
+
+Submit your REDCap query:
+
+```{r redcap_read_ex1}
+query <- REDCapR::redcap_read(
+  redcap_uri = 'https://redcap.vanderbilt.edu/api/',
+  token = Sys.getenv('REDCAP_API_KEY_VU')
+)
+```
+
+This returns a list with various pieces of information:
+
+```{r}
+names(query)
+```
+
+You care about `data`, which has the dataframe with the info you want. So, we do
+
+```{r}
+my_data <- query$data
+# View first few rows...
+head(my_data)
+```
+You can do more sophisticated queries. **This is especially useful in larger datasets because it saves time in downloading.** For example, you can request a 
+subset of your data by:
+
+- Tiempoint / event (e.g., visit 1, visit 2)
+- Form / instrument (e.g., phq9, gad7)
+- Specific fields (e.g., phq9_totalscore, gad7_totalscore)
+
+For example, here I only download the patient initials, phq9 total, and gad7
+total:
+
+```{r redcap_read_ex2}
+query <- REDCapR::redcap_read(
+  redcap_uri = 'https://redcap.vanderbilt.edu/api/',
+  token = Sys.getenv('REDCAP_API_KEY_VU'),
+  fields = c('pt_initials', 'phq9_total_score','sc_tot_score')
+)
+
+result <- query$data
+head(result)
+```
+
+### Building queries for your shiny apps: practical advice 
+
+- In small datasets, you could get away with downloading all the data once, and then filtering/transforming the data within the app as the client changes inputs/outputs
+
+- In larger datasets, you might need to make multiple, focused queries (especially if the datasets have lots of variables!)

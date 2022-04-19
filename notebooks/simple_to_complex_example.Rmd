@@ -1,0 +1,87 @@
+---
+title: "From simple to complex"
+output: html_notebook
+---
+
+```{r setup}
+library(tidyverse)
+library(plotly)
+```
+
+Consider the clinical dashboard. We can break down the tasks into:
+
+1. Get latest patient questionnaire data into R from REDCap
+2. Clean data
+3. Wrangle data to prepare it for my plot
+4. Make the plot
+5. (Optional): make plot nicer with `ggplotly`
+6. Convert into dashboard
+
+## Step 1: read data from REDCap
+
+```{r step01_get_data_from_redcap}
+my_data <- REDCapR::redcap_read(
+  redcap_uri = Sys.getenv('REDCAP_API_URL_VU'),
+  token = Sys.getenv('REDCAP_API_KEY_VU_SUPERFAKE')
+)$data %>% tibble()
+
+head(my_data)
+```
+
+## Step 2: clean data.
+
+Naturalistic data has weird stuff (e.g., patients with initials like fM, or who put dots between them). We want to clean it to make sure it works for our plots.
+
+```{r step02_clean_data}
+clean_data <- my_data %>%
+    filter(preappt_survey_complete == 2) %>% # so we dont get unfinished ones
+    mutate(pt_initials = pt_initials %>% # clean out initials
+             toupper() %>% # capitalize (in case of, e.g. Fm or fM)
+             str_replace_all('\\.','') # remove dots (if they do F.M.)
+           ) 
+```
+
+## Step 3: wrangle data.
+
+To get our data ready for making a plot, we want to subset only a specific patient's stuff, and pivot it from wide to long format. We do that here.
+
+```{r step03_wrangle_data}
+patient_selected <- 'CC'
+
+# subset data to include only stuff for this patient
+filtered_data <- clean_data %>% 
+  filter(pt_initials == patient_selected) %>% # only keep patient_selected's data
+  select(pt_initials, date_time, phq9_total_score, sc_tot_score) %>% # keep only relevant vars
+  drop_na() %>% # remove incomplete rows
+  pivot_longer(cols = c('phq9_total_score','sc_tot_score'), # pivot from wide to long
+                     names_to = 'scale',
+                     values_to = 'total_score')
+```
+
+## Step 4: make plot
+
+```{r step04_make_plot}
+# make the plot using ggplot arguments
+plt <- filtered_data %>% 
+  ggplot(aes(x=date_time, y=total_score, color=scale)) +
+  geom_line() +
+  geom_point() +
+  ylim(0,23) + # based on PHQ-9 limits
+  geom_hline(yintercept=10, linetype='dotted') +
+  labs(x='Date', y='Score', 
+       color = 'Scale',
+       title='Self-report scale scores') +
+  theme(legend.position = 'top') +
+  scale_colour_brewer(palette = "Set1")
+
+plt
+```
+
+## Step 5: make plot nicer using ggplotly
+```{r step05_make_plot_nicer}
+ggplotly(plt)
+```
+
+## Step 6: convert into dashboard
+
+Check out `shiny_app_examples/clinical_dashboard_01_simple.R` for a shiny-fied version of this code.

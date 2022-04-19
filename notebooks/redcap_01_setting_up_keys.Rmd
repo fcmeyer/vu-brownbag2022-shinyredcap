@@ -1,0 +1,40 @@
+---
+title: "REDCap #1: Setting up API keys correctly"
+output: html_notebook
+---
+
+```{r setup, echo=FALSE}
+library(tidyverse)
+library(REDCapR)
+```
+
+## Seting up your REDCap API keys
+
+It is bad practice to have your API keys in your code. API keys should NOT
+be shared and be dealt with EXTREMELY carefully.
+
+One approach is to store API keys in your `.Renviron` file, and then call code
+to retrieve them.
+
+An easy way to edit your .Renviron file is to call the `edit_r_envrion()`
+function from the `usethis` package on RStudio.
+
+```{r, eval=FALSE}
+usethis::edit_r_environ()
+```
+
+Put something like this in your `.Renviron`...
+
+```{r, eval=FALSE}
+MADE_UP_REDCAP_API_KEY="1111111111111111111111111111111111111"
+REDCAP_API_URL="https://redcap.vanderbilt.edu/api/"
+```
+
+**MAKE SURE YOU RESTART YOUR R SESSION AT THIS POINT!!!**
+
+Then, we can then retrieve them using `Sys.getenv()`:
+
+```{r}
+Sys.getenv('REDCAP_API_URL_VU')
+Sys.getenv('MADE_UP_REDCAP_API_KEY')
+```
